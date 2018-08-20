@@ -60,23 +60,27 @@ int get_loacl_ip(uint8_t * ip, uint8_t * netmask, uint8_t * mac) {
 
 	if(-1 == ioctl(fd, SIOCGIFADDR, &req)) {
 		perror("SIOCGIFADDR: ");
-		return 1;
+		goto error;
 	}
 	memcpy(ip, req.ifr_ifru.ifru_addr.sa_data + 2, 4);
 
 	if(-1 == ioctl(fd, SIOCGIFNETMASK, &req)) {
 		perror("SIOCGIFNETMASK: ");
-		return 1;
+		goto error;
 	}
 	memcpy(netmask, req.ifr_ifru.ifru_netmask.sa_data + 2, 6);
 
 	if(-1 == ioctl(fd, SIOCGIFHWADDR, &req)) {
 		perror("SIOCGIFHWADDR: ");
-		return 1;
+		goto error;
 	}
 	memcpy(mac, req.ifr_ifru.ifru_hwaddr.sa_data, 6);
 
+	close(fd);
 	return 0;
+error:
+	close(fd);
+	return 1;
 }
 
 int make_arp_packet(struct arp_packet * arp_in, uint8_t * ip_cli, uint8_t * ip_ser, uint8_t * mac_cli, uint16_t op)
@@ -155,7 +159,6 @@ again:
 			sprintf(buff, "%d.%d.%d.%d alive\n", arp_rc.ap_fromip[0], arp_rc.ap_fromip[1], arp_rc.ap_fromip[2], arp_rc.ap_fromip[3]);
 
 			pthread_mutex_lock(&mutex);
-			// printf("%d.%d.%d.%d alive\n", arp_rc.ap_fromip[0], arp_rc.ap_fromip[1], arp_rc.ap_fromip[2], arp_rc.ap_fromip[3]);
 			list_lpush(list_res, list_node_new(buff));
 			pthread_mutex_unlock(&mutex);
 
